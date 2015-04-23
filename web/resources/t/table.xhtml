@@ -1,0 +1,157 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:cc="http://xmlns.jcp.org/jsf/composite"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+
+    <!-- INTERFACE -->
+    <cc:interface>
+        <cc:attribute name="controller" type="com.cn.lotary.base.web.BaseController" required="true"/>        
+        <cc:attribute name="headerText" type="java.lang.String" default="Data Table"/>    
+        <cc:attribute name="deleteRow" type="java.lang.Boolean" default="false"/>    
+        <cc:attribute name="draggableRows" type="java.lang.Boolean" default="false"/>    
+        <cc:attribute name="draggableColumns" type="java.lang.Boolean" default="false"/>    
+        <cc:attribute name="sort" type="java.lang.Boolean" default="false"/>    
+        <cc:attribute name="filter" type="java.lang.Boolean" default="false"/>    
+        <cc:attribute name="columnToggler" type="java.lang.Boolean" default="false"/>    
+        <cc:attribute name="resetColumnsAble" type="java.lang.Boolean" default="false"/>
+        <cc:attribute name="cellEdit" type="java.lang.Boolean" default="false"/>
+        <cc:attribute name="select" type="java.lang.Boolean" default="false" shortDescription="support multiple select model"/>
+        <cc:attribute name="showIndex" type="java.lang.Boolean" default="false"/>
+        <cc:attribute name="emptyMessage" default="#{baseConfig.config('dt.emptyMessage')}"/>    
+        <cc:attribute name="currentPageReportTemplate" default="#{baseConfig.config('dt.currentPageReportTemplate')}"/>    
+        <cc:attribute name="paginatorTemplate" default="#{baseConfig.config('dt.paginatorTemplate')}"/>    
+        <cc:attribute name="paginatorPosition" default="#{baseConfig.config('dt.paginatorPosition')}"/>    
+        <cc:attribute name="rowsPerPageTemplate" default="#{baseConfig.config('dt.rowsPerPageTemplate')}"/>           
+    </cc:interface>
+
+    <!-- IMPLEMENTATION -->
+
+    <cc:implementation>
+        <style>
+            .ui-column-filter{
+                visibility: #{cc.attrs.filter eq false ? 'hidden!important':''};
+                display: #{cc.attrs.filter eq false ? 'none!important':''};            
+
+            }
+            .ui-sortable-column-icon{
+                visibility: #{cc.attrs.sort eq false ? 'hidden!important':''};
+                display: #{cc.attrs.sort eq false ? 'none!important':''};            
+            }
+        </style>
+        <!-- context menu not working now -->
+        <p:contextMenu for="entity_table">
+            <p:menuitem value="reset columns"
+                        actionListener="#{cc.attrs.controller.resetColumns}"
+                        process="entity_table,@this" update="entity_table,:growl">
+            </p:menuitem>
+        </p:contextMenu>
+        <p:dataTable id="entity_table"
+                     var="entity"
+                     value="#{cc.attrs.controller.dataModel}" 
+                     widgetVar="entity_tableTable"
+                     rows="10"
+                     lazy="true"   
+                     rowIndexVar="index"
+                     rowKey="#{entity.id}" 
+                     style="width: 100%;"
+                     editMode="cell"
+                     editable="true"
+                     filterEvent="enter"
+                     paginator="true"
+                     sortOrder="descending" 
+                     resizableColumns="true"
+                     liveResize="true"
+                     draggableRows="#{cc.attrs.draggableRows}"
+                     draggableColumns="#{cc.attrs.draggableColumns}"           
+                     rowStyleClass="BASE-#{index}-#{entity.id}-#{entity.sort}"                         
+                     selection="#{cc.attrs.controller.entitys}"
+                     emptyMessage="#{baseConfig.config('dt.emptyMessage')}"
+                     currentPageReportTemplate="#{baseConfig.config('dt.currentPageReportTemplate')}"
+                     paginatorTemplate="#{baseConfig.config('dt.paginatorTemplate')}"  
+                     paginatorPosition="#{baseConfig.config('dt.paginatorPosition')}"
+                     rowsPerPageTemplate="#{baseConfig.config('dt.rowsPerPageTemplate')}"
+                     >
+            <f:facet name="header">
+                #{cc.attrs.headerText}
+                <p:commandButton value="reset columns"
+                                 rendered="#{cc.attrs.resetColumnsAble}"
+                                 actionListener="#{cc.attrs.controller.resetColumns}"
+                                 process="entity_table,@this" update="entity_table,:growl">
+                </p:commandButton>
+                <h:panelGroup rendered="#{cc.attrs.columnToggler}">
+                    <p:selectCheckboxMenu id="menu"
+                                          value="#{cc.attrs.controller.selectColumns}"
+                                          label="Columns">
+                        <f:selectItems value="#{cc.attrs.controller.selectColumnsItems}"/>
+                    </p:selectCheckboxMenu>
+                    <p:commandButton value="submit"
+                                     process="menu,@this"
+                                     update="entity_table"
+                                     actionListener="#{cc.attrs.controller.updateColumns}"/>
+                </h:panelGroup>
+                <h:inputHidden value="newSort"/>
+            </f:facet>
+            <p:ajax event="rowReorder"
+                    listener="#{cc.attrs.controller.rowReorder}" 
+                    update=":growl"/>
+            <p:ajax event="colReorder"      
+                    onstart="bulidNewSort();"
+                    listener="#{cc.attrs.controller.colReorder}" 
+                    update=":growl"/>
+            <p:column rendered="#{cc.attrs.showIndex}" style="width: 30px;text-align: center;" toggleable="false">
+                <h:outputText value="#{index+1}"/>
+            </p:column>
+            <p:column selectionMode="multiple" rendered="#{cc.attrs.select}" style="width:24px;text-align:center"/>
+            <p:columns
+                id="columns"
+                value="#{cc.attrs.controller.columns}"
+                var="column"
+                field="#{column.field}"                           
+                columnIndexVar="columnIndex"
+                sortable="true"
+                styleClass="BA-#{column.field}}"
+                sortBy="#{false?entity[column.field]:''}"
+                filterBy="#{entity[column.field]}">
+                <f:facet name="header">
+                    <h:outputText id="column_sort" value="#{column.header}" class="#{column.id}"/>
+                </f:facet>
+
+                <h:outputText rendered="#{!cc.attrs.cellEdit}" value="#{entity[column.field]}"/>
+                <p:cellEditor rendered="#{cc.attrs.cellEdit}">
+                    <f:facet name="input">
+                        <p:inputText value="#{entity[column.field]}">
+                            <!-- why ueing this, the cellEdit not working in p:columns -->
+                            <p:ajax event="keydown" 
+                                    update=":growl"
+                                    listener="#{cc.attrs.controller.cellEdit(entity.id, column.field,entity[column.field])}"/>
+                        </p:inputText>
+                    </f:facet>
+                    <f:facet name="output">
+                        <h:outputText value="#{entity[column.field]}" />
+                    </f:facet>
+                </p:cellEditor>
+            </p:columns>
+            <p:column rendered="#{cc.attrs.deleteRow}">
+                <p:commandButton value="delete"
+                                 actionListener="#{cc.attrs.controller.remove()}"
+                                 process="entity_table" update=":growl"/>
+            </p:column>
+            <cc:insertChildren/>            
+        </p:dataTable>
+        <script>
+            function bulidNewSort() {
+                var newValue = "";
+                $('span[id$="column_sort"]').each(function (index) {
+                    if (newValue.indexOf($(this).attr('class')) === -1) {
+                        newValue += "," + $(this).attr('class') + "-" + index;
+                    }
+                });
+                newValue = newValue.replace(",", "");
+                console.log(newValue);
+                $('input[name$="_columnOrder"]').val(newValue);
+            }
+        </script>
+    </cc:implementation>
+</html>
