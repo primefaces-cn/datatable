@@ -101,6 +101,8 @@ public class CarView extends BaseController<Car> {
     private boolean sort;
     private boolean draggableColumns;
     private boolean columnToggler;
+    private boolean resizableColumns;
+    private boolean liveResize;
 
     public boolean isCellEdit() {
         return cellEdit;
@@ -164,6 +166,22 @@ public class CarView extends BaseController<Car> {
 
     public void setColumnToggler(boolean columnToggler) {
         this.columnToggler = columnToggler;
+    }
+
+    public boolean isResizableColumns() {
+        return resizableColumns;
+    }
+
+    public void setResizableColumns(boolean resizableColumns) {
+        this.resizableColumns = resizableColumns;
+    }
+
+    public boolean isLiveResize() {
+        return liveResize;
+    }
+
+    public void setLiveResize(boolean liveResize) {
+        this.liveResize = liveResize;
     }
 
     public void test() {

@@ -9,9 +9,15 @@
     </h:head>
     <h:body>
         <p:growl id="growl"/>
-        <h:form>
+        <h:form prependId="false">
+            TODO:
+            <p:messages/>
             <t:table controller="#{baseComumsModelController}"
                      columnToggler="true"
+                     liveResize="true"
+                     filter="true"
+                     cellEdit="true"
+                     resizableColumns="true"
                      draggableColumns="true"/>
         </h:form>
     </h:body>
